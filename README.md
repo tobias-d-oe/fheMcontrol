@@ -1,12 +1,12 @@
-#fheMcontrol
+# fheMcontrol
 *fheMcontrol* is a gateway server for integrating fhem to mediola aio-Remote.
 
-###Installation:
+### Installation:
 
 	python setup.py install
 	systemctl enable fheMcontrol
 
-###Configuration files:
+### Configuration files:
 - /etc/fheMcontrol/fheMcontrol.cfg
 - /etc/fheMcontrol/fheMcontrolServer.xml
 
@@ -21,7 +21,7 @@ Possible Options are:
 - **DEBUG** - enable debug mode or not [0|1]
 - **mctlDefFile** - where to find the definition file to translate mediola commands to fhem commands.
 
-###Commandline Arguments:
+### Commandline Arguments:
 
 	fheMcontrolServer -h
 	
