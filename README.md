@@ -21,24 +21,6 @@ Possible Options are:
 - **DEBUG** - enable debug mode or not [0|1]
 - **mctlDefFile** - where to find the definition file to translate mediola commands to fhem commands.
 
-### Commandline Arguments:
-
-	fheMcontrolServer -h
-	
-	fheMcontrolServer v. 0.1 -  mediola gateway for fhem  - (c) Tobias D. Oestreicher
-	---------------------------------------------------------------------------------
-	Usage:
-	  fheMcontrolServer [options]
-	
-	Options:
-	  -c <configfile>       : define the configurationfile for the daemon
-	  -d                    : enable debug output to stdout
-	  -h                    : shows this helpmessage
-	
-	Example:
-	  fheMcontrolServer -c /etc/fheMcontrol/fheMcontrol.cfg
-	---------------------------------------------------------------------------------
-
 
 ### Definition Configuration File:
 
@@ -81,7 +63,28 @@ Here are required to set `<fhemDev>`with the devicename used in fhem, the `<Read
 		</GetStates>
 	</mctl>
 	
+### Commandline Arguments:
+
+	fheMcontrolServer -h
 	
+	fheMcontrolServer v. 0.1 -  mediola gateway for fhem  - (c) Tobias D. Oestreicher
+	---------------------------------------------------------------------------------
+	Usage:
+	  fheMcontrolServer [options]
+	
+	Options:
+	  -c <configfile>       : define the configurationfile for the daemon
+	  -d                    : enable debug output to stdout
+	  -h                    : shows this helpmessage
+	
+	Example:
+	  fheMcontrolServer -c /etc/fheMcontrol/fheMcontrol.cfg
+	---------------------------------------------------------------------------------
+
+
+
+
+
 ### Debugging:
 
 For debugging purposese start fheMcontrolServer in the foregroud with the **-d** argument:
