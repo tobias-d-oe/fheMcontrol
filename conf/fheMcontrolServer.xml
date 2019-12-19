@@ -1,0 +1,25 @@
+<mctl>
+	<ExecuteCommand>
+		<!-- the command name is a combination of <devicegroup>.<devicename>.<command> -->
+		<Command name="Test.Wohnzimmer_Lampe.toggle">
+			<!-- fhemCmd is the real command for executing in fhem -->
+			<fhemCmd>set Wohnzimmer_Lampe_Tisch toggle</fhemCmd>
+		</Command>
+		<!-- you can add more commands by multiplicating the command definition -->
+		<Command name="Test.Wohnzimmer_Lampe2.toggle">
+			<fhemCmd>set Wohnzimmer_Lampe_Couch toggle</fhemCmd>
+		</Command>
+
+	</ExecuteCommand>
+	<GetStates>
+		<!-- the command name is a combination of <devicegroup>.<devicename> -->
+		<Command name="Test.Wohnzimmer_Lampe">
+			<!-- Type can be ether Reading or Internal or Attribute -->
+			<Type>Reading</Type>
+			<!-- fhemDev is the devicename setup in fhem -->
+			<fhemDev>Wohnzimmer_Lampe_Tisch</fhemDev>
+			<!-- what reading/attribute/internal variable should be returned -->
+			<Reading>state</Reading>
+		</Command>
+	</GetStates>
+</mctl>

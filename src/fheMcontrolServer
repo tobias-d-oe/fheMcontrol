@@ -1,0 +1,236 @@
+#!/usr/bin/python
+
+# imoprt required modules
+import socket
+import sys
+import getopt
+import xml.etree.ElementTree as ET
+import telnetlib
+import json
+import traceback
+import logging
+import logging.handlers
+import time
+
+
+# Setup default variables
+conf={}
+conf['listenPort'] = 8082
+conf['listenIP'] = '0.0.0.0'
+conf['fhemIP'] = '127.0.0.1'
+conf['fhemtelnetPort'] = 7072
+conf['DEBUG'] = 0
+conf['mctlDefFile'] = '/etc/fheMcontrol/fheMcontrolServer.xml' 
+
+
+def logmsg(msg,error=False):
+    if error == False:
+        logger.info(msg)
+    else:
+        logger.error(msg)
+
+
+def readConfig(configfile):
+    try:
+        with open(configfile) as configuration:
+            for line in configuration:
+                if line.strip().startswith('#') or len(line.strip()) < 1:
+                    continue
+                name, var = line.partition("=")[::2]
+                name = name.strip()
+                var = var.strip()
+                if name == "listenPort" or name == "fhemtelnetPort" or name == "DEBUG":
+                    conf[name] = int(var)
+                else:
+                    conf[name] = var
+    except:
+        logmsg("Configuration file could not be opened",True)
+        sys.exit()
+
+def translateGetStates(root,cmdname):
+    element=root.find("./GetStates/Command[@name='%s']" % cmdname)
+    Type=element.find('Type').text
+    fhemDev=element.find('fhemDev').text
+    Reading=element.find('Reading').text
+    return Type,fhemDev,Reading
+
+
+def translateExecuteCommand(root,cmdname):
+    element=root.find("./ExecuteCommand/Command[@name='%s']" % cmdname)
+    fhemCmd=element.find('fhemCmd').text
+    return fhemCmd
+
+
+
+
+def createmsgpack(message):
+    XMLResponse='XML\n'
+    xmllen=len(message)
+    LEN="%08d" % (xmllen,)
+    XMLResponse=XMLResponse+LEN+'\n'+message
+    return XMLResponse
+
+
+def msgprocess(message):
+    if conf['DEBUG'] == 1:
+        print "DEBUG: - Received - %s" % (time.time())
+        print "----------"
+        print message
+        print "----------"
+    message = "\n".join(message.split('\n')[3:])
+    tree = ET.fromstring(str(message))
+    RequestType=tree[0].attrib['name']
+    XMLResponse= '<?xml version="1.0"?>\n<mctrlmessage>\n<response>\n'
+    if RequestType == 'ExecuteCommand':
+        for child in tree[0]:
+            fhemexec=setdeviceExec(translateExecuteCommand(definitions,child.attrib['value']))
+            if len(fhemexec.rstrip()) <1:
+                fhemexec="success"
+            else:
+                fhemexec="error"
+
+            XMLResponse=XMLResponse+'<return name="status" value="'+fhemexec+'" />\n' 
+    elif RequestType == 'GetStates':
+        for child in tree[0]:
+            name=child.attrib['name']
+           
+            fhemtype,fhemdev,fhemreading = translateGetStates(definitions,child.attrib['value'])
+            if fhemtype == "Reading":
+                fhemstate=getdeviceReading(fhemdev,fhemreading)
+            elif fhemtype == "Attribute":
+                fhemstate=getdeviceAttribut(fhemdev,fhemreading)
+            elif fhemtype == "Internal":
+                fhemstate=getdeviceInternal(fhemdev,fhemreading)
+            XMLResponse=XMLResponse+'<return name="'+name+'" value="'+fhemstate.rstrip()+'" />\n'
+    XMLResponse= XMLResponse + "</response>\n</mctrlmessage>\n"
+    return createmsgpack(XMLResponse)
+
+
+def setdeviceExec(fhemexec):
+    tn = telnetlib.Telnet(conf['fhemIP'],conf['fhemtelnetPort'])
+    tn.write(fhemexec+'\nexit\n')
+    response=tn.read_all().replace('Bye...','')
+    return response
+
+
+def getfhemstate(device):
+    tn = telnetlib.Telnet(conf['fhemIP'],conf['fhemtelnetPort'])
+    tn.write('jsonlist '+device+'\nexit\n')
+    response=tn.read_all().replace('Bye...','')
+    return response
+
+
+def getdeviceReading(device,reading):
+    try:
+        state=getfhemstate(device)
+        statejson =json.loads(state)
+        if conf['DEBUG'] == 1:
+            print "DEBUG: - FHEM-Response - %s" % (time.time())
+            print "----------"
+            print statejson
+            print "----------"
+        ret=statejson["Results"][0]["Readings"][reading]["Value"]
+    except:
+        ret='not found'
+    return ret
+
+
+def getdeviceAttribut(device,attrib):
+    state=getfhemstate(device)
+    statejson =json.loads(state)
+    return statejson["Results"][0]["Attributes"][attrib]
+
+
+def getdeviceInternal(device,internal):
+    state=getfhemstate(device) 
+    statejson =json.loads(state)
+    return statejson["Results"][0]["Internals"][internal]
+
+
+def usage():
+    usagemsg="""
+fheMcontrolServer v. 0.1 -  mediola gateway for fhem  - (c) Tobias D. Oestreicher
+---------------------------------------------------------------------------------
+Usage:
+  fheMcontrolServer [options]
+
+Options:
+  -c <configfile>       : define the configurationfile for the daemon
+  -d                    : enable debug output to stdout
+  -h                    : shows this helpmessage
+
+Example:
+  fheMcontrolServer -c /etc/fheMcontrol/fheMcontrol.cfg
+---------------------------------------------------------------------------------
+"""
+    return usagemsg
+
+# setup logging to syslog
+logger = logging.getLogger('fheMcontrolLogger')
+logger.setLevel(logging.DEBUG)
+handler = logging.handlers.SysLogHandler(address = '/dev/log')
+logformat = logging.Formatter('fheMcontrol: %(message)s')
+handler.setFormatter(logformat)
+logger.addHandler(handler)
+
+
+# parse commandline arguments
+configfile=''
+myopts, args = getopt.getopt(sys.argv[1:],"c:hd")
+
+for o, a in myopts:
+    if o == '-c':
+        configfile=a
+    elif o == '-d':
+        conf['DEBUG']=1
+    else:
+        print(usage())
+        sys.exit()
+
+# read settings from configfile
+if configfile:
+    readConfig(configfile)
+
+
+# read definition file
+deftree = ET.parse(conf['mctlDefFile'])
+definitions = deftree.getroot()
+
+# create a TCP/IP socket
+sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+sock.settimeout(None)
+server_address = (conf['listenIP'], conf['listenPort'])
+logmsg("Starting up on %s with port %s" % server_address)
+sock.bind(server_address)
+
+
+try:
+    sock.listen(1)
+    
+    while True:
+        logmsg("Wait for connection")
+        connection, client_address = sock.accept()
+        try:
+            logmsg("Connection from %s" % str(connection.getpeername()[0]))
+            recdata=''
+            while True:
+                data = connection.recv(1024)
+                if data:
+                    recdata = recdata + data
+                else:
+                    break
+            responsestr=msgprocess(recdata)
+            if conf['DEBUG'] == 1:
+                print "DEBUG: - Sent - %s" % (time.time())
+                print "------"
+                print responsestr
+                print "------"
+            connection.sendall(responsestr)
+            logmsg("Responding Client %s" % str(connection.getpeername()[0]))    
+        finally:
+            connection.close()
+except KeyboardInterrupt:
+    logmsg("Shutting down fheMcontrol Server")
+except Exception:
+    traceback.print_exc(file=sys.stdout)
+sys.exit(0)

@@ -1,0 +1,10 @@
+[Unit]
+Description=fheMcontrol server daemon
+
+[Service]
+ExecStart=/usr/bin/fheMcontrolServer -c /etc/fheMcontrol/fheMcontrol.cfg
+IgnoreSIGPIPE=false
+
+[Install]
+WantedBy=multi-user.target
+
