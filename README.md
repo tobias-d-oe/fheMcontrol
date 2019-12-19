@@ -42,7 +42,7 @@ Possible Options are:
 
 ### Definition Configuration File:
 
-The definition configuration file */etc/fheMcontrol/fheMcontrolServer.xml* is for translating incoming mediola commands to fhem commands.
+The definition configuration file **fheMcontrolServer.xml** is for translating incoming mediola commands to fhem commands.
 After you have to setup the executable commands before, this is also a security feature.
 The definiton file contains two main sections.
 
