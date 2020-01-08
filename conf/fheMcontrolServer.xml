@@ -9,6 +9,12 @@
 		<Command name="Test.Wohnzimmer_Lampe2.toggle">
 			<fhemCmd>set Wohnzimmer_Lampe_Couch toggle</fhemCmd>
 		</Command>
+		<!-- wildcard example -->
+		<!-- if a command is requested starting with Test.HeizungTemp the 3rd part will be used for replace the@ sign within the fhemCmd Tag -->
+		<Command name="Test.HeizungTemp.*">
+			<fhemCmd>set Heizung desired-temp @</fhemCmd>
+		</Command>
+
 
 	</ExecuteCommand>
 	<GetStates>
