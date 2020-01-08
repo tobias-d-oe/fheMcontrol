@@ -58,8 +58,16 @@ def translateGetStates(root,cmdname):
 
 
 def translateExecuteCommand(root,cmdname):
-    element=root.find("./ExecuteCommand/Command[@name='%s']" % cmdname)
-    fhemCmd=element.find('fhemCmd').text
+    try:
+        element=root.find("./ExecuteCommand/Command[@name='%s']" % cmdname)
+        fhemCmd=element.find('fhemCmd').text
+    except:
+        commandbase=cmdname.split('.')
+        commandvalue=commandbase[2]
+        commandbase=commandbase[0]+'.'+commandbase[1]+'.*'
+        element=root.find("./ExecuteCommand/Command[@name='%s']" % commandbase)
+        fhemCmd=element.find('fhemCmd').text
+        fhemCmd=fhemCmd.replace('@',commandvalue)
     return fhemCmd
 
 
@@ -94,7 +102,7 @@ def msgprocess(message):
     elif RequestType == 'GetStates':
         for child in tree[0]:
             name=child.attrib['name']
-           
+            
             fhemtype,fhemdev,fhemreading = translateGetStates(definitions,child.attrib['value'])
             if fhemtype == "Reading":
                 fhemstate=getdeviceReading(fhemdev,fhemreading)
